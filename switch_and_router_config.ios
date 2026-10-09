@@ -1,0 +1,81 @@
+! ==========================================================
+! LAB 1: ENTERPRISE LAYER 2 SWITCH CONFIGURATION
+! ==========================================================
+enable
+configure terminal
+
+! 1. Configure VLANs and Names
+vlan 10
+ name HR_Department
+exit
+
+vlan 20
+ name IT_Department
+exit
+
+! 2. Assign Host Access Ports to VLAN 10 (e.g., FastEthernet 0/1 - 0/10)
+interface range fa0/1 - 10
+ switchport mode access
+ switchport access vlan 10
+ spanning-tree portfast
+exit
+
+! 3. Assign Host Access Ports to VLAN 20 (e.g., FastEthernet 0/11 - 0/20)
+interface range fa0/11 - 20
+ switchport mode access
+ switchport access vlan 20
+ spanning-tree portfast
+exit
+
+! 4. Configure Trunk Uplink Interface to the Router (e.g., GigabitEthernet 0/1)
+interface gi0/1
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20
+ description Uplink_to_ROAS_Router
+exit
+end
+write memory
+
+! ==========================================================
+! LAB 1: ROUTER-ON-A-STICK (ROAS) INTER-VLAN ROUTING
+! ==========================================================
+enable
+configure terminal
+
+! 1. Turn on the physical interface connecting to the switch
+interface gi0/0
+ no shutdown
+ description Core_Switch_Uplink
+exit
+
+! 2. Configure Subinterface for VLAN 10 (Gateway for HR)
+interface gi0/0.10
+ encapsulation dot1Q 10
+ ip address 192.168.10.1 255.255.255.0
+ description Gateway_VLAN_10
+exit
+
+! 3. Configure Subinterface for VLAN 20 (Gateway for IT)
+interface gi0/0.20
+ encapsulation dot1Q 20
+ ip address 192.168.20.1 255.255.255.0
+ description Gateway_VLAN_20
+exit
+
+! 4. Configure Local DHCP Server Pools for Automation
+ip dhcp excluded-address 192.168.10.1 192.168.10.10
+ip dhcp excluded-address 192.168.20.1 192.168.20.10
+
+ip dhcp pool VLAN_10_POOL
+ network 192.168.10.0 255.255.255.0
+ default-router 192.168.10.1
+ dns-server 8.8.8.8
+exit
+
+ip dhcp pool VLAN_20_POOL
+ network 192.168.20.0 255.255.255.0
+ default-router 192.168.20.1
+ dns-server 8.8.8.8
+exit
+end
+write memory
